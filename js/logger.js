@@ -19,8 +19,10 @@ export function newRow(kind, ex) {
   const uni = !!(ex && ex.unilateral);
   switch (kind) {
     case 'strength':
+      // Unilateral strength tracks effort per side (rpeL/rpeR) — left/right
+      // asymmetry is core data for this program. Bilateral keeps a single rpe.
       return uni
-        ? { weight: '', count: defaultCount(ex), repsL: '', repsR: '', rpe: '', note: '' }
+        ? { weight: '', count: defaultCount(ex), repsL: '', repsR: '', rpeL: '', rpeR: '', note: '' }
         : { weight: '', count: defaultCount(ex), reps: '', rpe: '', note: '' };
     case 'amrap':
       return { reps: '', rpe: '', note: '' };

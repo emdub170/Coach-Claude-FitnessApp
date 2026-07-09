@@ -28,7 +28,7 @@ So logging is fast on a phone, and Claude gets clean data to track progress from
 1. **Start a workout** → pick your **location**, then the **workout type**. You'll see a preview.
 2. **Begin** → each exercise is a card with its target sets/reps/load and coaching cues, plus the
    right logging widget:
-   - **Strength** — weight, ×2/×1/bar, reps, RPE (unilateral shows L/R reps)
+   - **Strength** — weight, ×2/×1/bar, reps, RPE (unilateral shows L/R reps **and L/R RPE**)
    - **AMRAP** — reps, RPE
    - **Holds** (plank/side plank) — seconds, RPE
    - **Carries** — weight, steps, RPE
@@ -52,7 +52,8 @@ Matches how you already log, so Claude reads it natively:
 | `50.2x10 -8` | 50 lb, **2** implements (pair), 10 reps, RPE 8 |
 | `50.1x10 -6` | 50 lb, **1** implement (goblet/single), 10 reps, RPE 6 |
 | `155x5 -9` | barbell (no implement count) 155 lb, 5 reps, RPE 9 |
-| `BWx10L, 10R -6` | bodyweight, 10 left / 10 right, RPE 6 |
+| `BWx10L, 10R -6` | bodyweight, 10 left / 10 right, RPE 6 (both sides) |
+| `BWx10L -8, 10R -7` | 10 left @ RPE 8, 10 right @ RPE 7 (per-side effort) |
 | `4 rounds — 3:27 -7, 3:37 -8, …` | circuit rounds with time + RPE |
 | `60s x 7.0 / 90s x 2.7` | treadmill interval segments |
 

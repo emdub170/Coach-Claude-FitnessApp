@@ -234,7 +234,7 @@ function renderRows(e, i) {
   const kind = e.kind;
   const uni = e.unilateral;
   const labels = {
-    strength: uni ? ['', 'wt', '', 'L reps', 'R reps', 'RPE', ''] : ['', 'weight', '', 'reps', 'RPE', ''],
+    strength: uni ? ['', 'wt', '', 'L reps', 'R reps', 'L RPE', 'R RPE', ''] : ['', 'weight', '', 'reps', 'RPE', ''],
     amrap: ['', 'reps', 'RPE', ''],
     hold: uni ? ['', 'L sec', 'R sec', 'RPE', ''] : ['', 'seconds', 'RPE', ''],
     carry: ['', 'weight', '', 'steps', 'RPE', ''],
@@ -257,7 +257,7 @@ function renderRows(e, i) {
     if (kind === 'strength' && uni) {
       cells = idx + inp(i, ri, 'weight', r.weight, 'lb', DEC) + countSelect(i, ri, r.count)
         + inp(i, ri, 'repsL', r.repsL, 'L', NUM) + inp(i, ri, 'repsR', r.repsR, 'R', NUM)
-        + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+        + inp(i, ri, 'rpeL', r.rpeL, 'L', NUM) + inp(i, ri, 'rpeR', r.rpeR, 'R', NUM) + del(i, ri);
     } else if (kind === 'strength') {
       cells = idx + inp(i, ri, 'weight', r.weight, 'lb', DEC) + countSelect(i, ri, r.count)
         + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
