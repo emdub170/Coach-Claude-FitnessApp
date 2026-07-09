@@ -35,9 +35,13 @@ So logging is fast on a phone, and Claude gets clean data to track progress from
    - **Circuits** — one row per round: time (mm:ss), RPE
    - **Intervals** — segments: duration × speed/pace
    - **+ set / + round / + segment** to add rows; **Skip** to drop an exercise
-3. Add **session notes** and **duration**, then **Finish & Save**. A workout in progress survives
+3. Set the **training date** — it defaults to today, but if you're logging a workout from an
+   earlier day, change it here so the session sorts by the day you *trained*, not the day you typed
+   it in. (Progressive-overload targets read "last session of this type," so the date has to be
+   right.)
+4. Add **session notes** and **duration**, then **Finish & Save**. A workout in progress survives
    closing the app — it's saved as you type.
-4. **History** lists every session; tap to view (in shorthand) or delete.
+5. **History** lists every session; tap to view (in shorthand), fix the **training date**, or delete.
 
 ### Logging shorthand (used in exports)
 

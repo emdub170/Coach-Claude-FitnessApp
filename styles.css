@@ -116,6 +116,7 @@ input, select, textarea {
 input::placeholder { color: #6b7c9c; }
 textarea { min-height: 70px; resize: vertical; }
 input[inputmode="numeric"], input[inputmode="decimal"] { text-align: center; }
+.datebox input[type=date] { max-width: 200px; }
 
 .row-strength { grid-template-columns: 16px 1.2fr .8fr 1fr .8fr auto; }
 .row-strength-uni { grid-template-columns: 16px 1.1fr .7fr .8fr .8fr .8fr auto; }
