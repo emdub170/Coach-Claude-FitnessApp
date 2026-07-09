@@ -2,7 +2,7 @@
 // No DOM here; app.js owns rendering. Rows are kept mostly as strings so logging
 // on a phone stays low-friction; export.js formats them into Coach shorthand.
 
-function todayISO() {
+export function todayISO() {
   const d = new Date();
   const p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
@@ -73,8 +73,11 @@ export function buildEntry(ex) {
 export function createSession(workout, location, variant) {
   return {
     id: null, // assigned on save
+    // Training date: defaults to today but is user-editable at entry and after.
+    // This is the field everything sorts/filters on — NOT startedAt. Back-entered
+    // or time-shifted sessions must reflect the day trained, not the day logged.
     date: todayISO(),
-    startedAt: new Date().toISOString(),
+    startedAt: new Date().toISOString(), // real entry timestamp, kept for record only
     workoutId: workout.id,
     workoutName: workout.name,
     location: location.id,

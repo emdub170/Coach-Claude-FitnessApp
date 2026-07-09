@@ -7,7 +7,7 @@ import {
   getSessions, getSession, saveSession, deleteSession,
   getMeta, setMeta, newSessionId
 } from './store.js';
-import { createSession, addRow, removeRow } from './logger.js';
+import { createSession, addRow, removeRow, todayISO } from './logger.js';
 import { toMarkdown, toJSON, filterSince, isoDaysAgo } from './export.js';
 
 const appEl = document.getElementById('app');
@@ -160,7 +160,11 @@ function workoutScreen() {
   const entries = s.entries.map((e, i) => entryCard(e, i)).join('');
   return `
     <h1>${esc(s.workoutName)} <span class="pill">${esc(s.locationName)}</span></h1>
-    <p class="muted small">${esc(s.date)} · tap fields to log. Everything saves on-device.</p>
+    <div class="card datebox">
+      <label class="field" for="session-date">Training date</label>
+      <input type="date" id="session-date" data-session-date value="${esc(s.date)}" max="${esc(todayISO())}" />
+      <p class="muted small">Defaults to today — set it to the day you actually trained if you're logging late. Tap fields below to log; everything saves on-device.</p>
+    </div>
     ${warmup}
     ${entries}
     <div class="card">
@@ -302,7 +306,11 @@ async function sessionScreen(id) {
   const md = toMarkdown([s]).split('\n').slice(3).join('\n'); // drop file header
   return `
     <h1>${esc(s.workoutName)}</h1>
-    <p class="muted">${esc(s.date)} · ${esc(s.locationName)}${s.durationMin ? ' · ' + esc(s.durationMin) + ' min' : ''}</p>
+    <div class="card datebox">
+      <label class="field" for="edit-date">Training date</label>
+      <input type="date" id="edit-date" data-edit-date="${esc(s.id)}" value="${esc(s.date)}" max="${esc(todayISO())}" />
+      <p class="muted small">${esc(s.locationName)}${s.durationMin ? ' · ' + esc(s.durationMin) + ' min' : ''} · change the date if this was trained on a different day.</p>
+    </div>
     <pre class="export">${esc(md)}</pre>
     <div class="btn-row">
       <button class="btn danger" data-del-session="${esc(s.id)}">Delete</button>
@@ -400,6 +408,11 @@ function onInput(ev) {
     persistActive();
     return;
   }
+  if (t.dataset.sessionDate !== undefined && active) {
+    if (t.value) { active.date = t.value; persistActive(); } // ignore a cleared field
+    return;
+  }
+  if (t.dataset.editDate !== undefined) { return editSessionDate(t.dataset.editDate, t.value); }
   if (t.dataset.warmup !== undefined && active) { active.warmupDone = t.checked; persistActive(); return; }
   if (t.dataset.sessionNotes !== undefined && active) { active.notes = t.value; persistActive(); return; }
   if (t.dataset.sessionDuration !== undefined && active) {
@@ -469,6 +482,17 @@ async function finishWorkout() {
   const id = active.id;
   active = null;
   location.hash = '#/session/' + id;
+}
+
+// Persist a training-date edit on an already-saved session, then re-render so the
+// exported markdown/JSON header and history ordering reflect the corrected day.
+async function editSessionDate(id, value) {
+  if (!value) return; // ignore a cleared field; keep the existing date
+  const s = await getSession(id);
+  if (!s || s.date === value) return;
+  s.date = value;
+  await saveSession(s);
+  render();
 }
 
 // ---- export actions ----------------------------------------------------
