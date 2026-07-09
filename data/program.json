@@ -1,0 +1,193 @@
+{
+  "version": "2026-07-09",
+  "athlete": "Mike",
+  "goal": "ACFT prep (push-ups / plank, deadlift, 2-mile run, sprint-drag-carry)",
+  "locations": [
+    { "id": "FULL_GYM", "name": "Full Gym", "hint": "AT base gym / nice hotel" },
+    { "id": "HOME", "name": "Home", "hint": "Peloton / kettlebells / bands" },
+    { "id": "HOTEL", "name": "Hotel", "hint": "treadmill / dumbbells to 50 / travel bands" },
+    { "id": "BODYWEIGHT", "name": "Bodyweight", "hint": "just you + the floor" }
+  ],
+  "globalRules": [
+    "Floor = show up and start. 15 minutes counts as a win.",
+    "Pick the version for where you woke up. During AT: FULL GYM is the default.",
+    "Log shorthand: 50.2x10 -8 = 50 lb, 2 implements (pair), 10 reps, RPE 8. BWx10L/10R = bodyweight, unilateral. Circuits: rounds + total time + RPE. Intervals: seconds x speed."
+  ],
+  "workouts": [
+    {
+      "id": "upper_core",
+      "name": "Upper + Core",
+      "focus": "Push/Pull + Core (ACFT hand-release push-up + plank prep)",
+      "timeCapMin": 60,
+      "rules": [
+        "TIME CAP ~60 min (warm-up ~6 / strength ~42 / core ~10). Rest 60-90s on everything, 2 min only on the first press.",
+        "Core stays anti-extension / anti-rotation (hollow holds are OUT — audit 2026-06-12, they flagged the back).",
+        "July push-up challenge (1776 total): the day's 60 challenge push-ups COUNT as this session's push-up slot. Don't double up."
+      ],
+      "variants": {
+        "FULL_GYM": {
+          "warmup": ["Band pull-aparts x20", "Arm circles", "5 min easy cardio"],
+          "exercises": [
+            { "name": "DB bench press", "kind": "strength", "sets": 3, "reps": "8-10", "load": "start ~60 lb, add reps before weight", "cues": "baseline 6/1: 65.2x10 @ RPE 9; 60s rest to start" },
+            { "name": "Seated cable row", "kind": "strength", "sets": 3, "reps": "10-12", "cues": "1s pause at full contraction" },
+            { "name": "Lat pulldown or assisted pull-up", "kind": "strength", "sets": 3, "reps": "8-10" },
+            { "name": "Overhead DB press", "kind": "strength", "sets": 3, "reps": "8-10", "cues": "DBs build stability better than cables" },
+            { "name": "Hand-release push-ups", "kind": "amrap", "sets": 2, "reps": "AMRAP", "cues": "ACFT standard" },
+            { "name": "DB curl", "kind": "strength", "sets": 2, "reps": "10/arm", "unilateral": true, "cues": "one arm at a time, START LEFT — lagging side sets the rep count" },
+            { "name": "Dead bug", "kind": "strength", "sets": 2, "reps": "10/side", "unilateral": true, "load": "bodyweight" },
+            { "name": "Side plank", "kind": "hold", "sets": 2, "reps": "40s/side", "unilateral": true },
+            { "name": "Plank", "kind": "hold", "sets": 2, "reps": "30-45s", "cues": "glutes squeezed hard, ribs down" }
+          ]
+        },
+        "HOME": {
+          "warmup": ["Band pull-aparts x20", "Arm circles"],
+          "exercises": [
+            { "name": "Push-ups (hand-release)", "kind": "amrap", "sets": 3, "reps": "AMRAP" },
+            { "name": "Band row", "kind": "strength", "sets": 3, "reps": "12", "load": "Medium/Heavy band", "cues": "bent-over standing, not anchored seated-style" },
+            { "name": "Band overhead press", "kind": "strength", "sets": 3, "reps": "10" },
+            { "name": "KB floor press", "kind": "strength", "sets": 3, "reps": "10/arm", "unilateral": true, "load": "30 lb", "cues": "elbows ~45 degrees from torso, not flared to 90" },
+            { "name": "Band curl", "kind": "strength", "sets": 2, "reps": "10/arm", "unilateral": true, "cues": "start left" },
+            { "name": "Dead bug", "kind": "strength", "sets": 2, "reps": "10/side", "unilateral": true, "load": "bodyweight" },
+            { "name": "Side plank", "kind": "hold", "sets": 2, "reps": "40s/side", "unilateral": true },
+            { "name": "Plank", "kind": "hold", "sets": 2, "reps": "30-45s" }
+          ]
+        },
+        "HOTEL": {
+          "warmup": ["Band pull-aparts x20", "Arm circles"],
+          "exercises": [
+            { "name": "DB floor or bench press", "kind": "strength", "sets": 3, "reps": "10" },
+            { "name": "One-arm DB row", "kind": "strength", "sets": 3, "reps": "10/arm", "unilateral": true },
+            { "name": "DB shoulder press", "kind": "strength", "sets": 3, "reps": "8-10" },
+            { "name": "Push-ups", "kind": "amrap", "sets": 2, "reps": "AMRAP" },
+            { "name": "DB curl", "kind": "strength", "sets": 2, "reps": "10/arm", "unilateral": true, "cues": "start left" },
+            { "name": "Band face pull", "kind": "strength", "sets": 2, "reps": "15", "load": "Light/Medium band", "cues": "posture after long flights" },
+            { "name": "Dead bug", "kind": "strength", "sets": 2, "reps": "10/side", "unilateral": true, "load": "bodyweight" },
+            { "name": "Side plank", "kind": "hold", "sets": 2, "reps": "40s/side", "unilateral": true },
+            { "name": "Plank", "kind": "hold", "sets": 2, "reps": "30-45s" }
+          ]
+        },
+        "BODYWEIGHT": {
+          "warmup": ["Arm circles", "Scap push-ups x10"],
+          "exercises": [
+            { "name": "Push-ups (hand-release)", "kind": "amrap", "sets": 3, "reps": "AMRAP" },
+            { "name": "Feet-elevated push-ups", "kind": "strength", "sets": 2, "reps": "8-10", "load": "bodyweight" },
+            { "name": "Pike push-ups", "kind": "strength", "sets": 2, "reps": "8", "load": "bodyweight" },
+            { "name": "Band row", "kind": "strength", "sets": 3, "reps": "12", "cues": "if bands made the trip (they should always make the trip)" },
+            { "name": "Dead bug", "kind": "strength", "sets": 3, "reps": "10/side", "unilateral": true, "load": "bodyweight" },
+            { "name": "Bird dog", "kind": "strength", "sets": 2, "reps": "10/side", "unilateral": true, "load": "bodyweight" },
+            { "name": "Side plank", "kind": "hold", "sets": 2, "reps": "40s/side", "unilateral": true },
+            { "name": "Plank", "kind": "hold", "sets": 2, "reps": "30-45s" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lower_hinge",
+      "name": "Lower + Hinge",
+      "focus": "Lower body + hinge (ACFT deadlift + run prep)",
+      "timeCapMin": 60,
+      "rules": [
+        "TIME CAP ~60 min (warm-up ~10 / strength ~40 / finisher ~10). 90s on accessories, 2 min only on the main hinge. Time-crunched? Cut the finisher — never the hinge or squat.",
+        "HINGE REINTRO RULE: 2+ weeks off hinging → half the listed sets at RPE 6, earn volume back over 2-3 weeks.",
+        "Never run a full hinge session on a day of heavy physical labor or rucks — that stacking is what puts your back down."
+      ],
+      "variants": {
+        "FULL_GYM": {
+          "warmup": ["90/90 hip switches x8/side", "Couch / half-kneeling hip flexor stretch x30s/side", "Glute bridge x15, then single-leg x8/side", "World's greatest stretch x5/side", "5 min bike or row", "Leg swings x10/side, bird dog x8/side"],
+          "exercises": [
+            { "name": "Trap-bar or barbell deadlift", "kind": "strength", "sets": 3, "reps": "6", "load": "@ RPE 7 — this IS the ACFT MDL; reintro rule applies" },
+            { "name": "Leg press or goblet squat", "kind": "strength", "sets": 3, "reps": "10" },
+            { "name": "DB walking lunge", "kind": "strength", "sets": 2, "reps": "10/leg", "unilateral": true },
+            { "name": "Banded lateral walk + clamshell", "kind": "strength", "sets": 1, "reps": "15/side each", "unilateral": true, "cues": "hip abduction / ext rotation — the seated-life accessory" },
+            { "name": "Farmer carry", "kind": "carry", "sets": 3, "reps": "40 yd", "load": "heaviest DBs you can hold", "cues": "SDC prep + grip + anti-lean core" },
+            { "name": "Side plank", "kind": "hold", "sets": 2, "reps": "40s/side", "unilateral": true },
+            { "name": "Finisher: incline-treadmill or bike intervals", "kind": "interval", "reps": "10-12 min", "optional": true, "cues": "may stretch total to 80 min MAX — exception, not rule" }
+          ]
+        },
+        "HOME": {
+          "warmup": ["90/90 hip switches x8/side", "Couch / half-kneeling hip flexor stretch x30s/side", "Glute bridge x15, then single-leg x8/side", "World's greatest stretch x5/side", "5 min easy spin", "Leg swings x10/side"],
+          "exercises": [
+            { "name": "Goblet squat", "kind": "strength", "sets": 3, "reps": "10", "load": "30 lb KB" },
+            { "name": "Band RDL / deadlift", "kind": "strength", "sets": 3, "reps": "12", "load": "Heavy or XL — reintro rule applies" },
+            { "name": "KB swing", "kind": "strength", "sets": 3, "reps": "15", "load": "30 lb", "cues": "on reintro weeks cut to 2x15; band DL and swings are BOTH hinge volume, don't max both" },
+            { "name": "Reverse lunge", "kind": "strength", "sets": 2, "reps": "10/leg", "unilateral": true, "load": "hold KB" },
+            { "name": "Banded lateral walk + clamshell", "kind": "strength", "sets": 1, "reps": "15/side each", "unilateral": true, "load": "Light/Medium band" },
+            { "name": "Suitcase carry", "kind": "carry", "sets": 3, "reps": "40 steps/side", "load": "30 lb KB", "unilateral": true, "cues": "SDC prep + anti-rotation core" },
+            { "name": "Finish: Peloton intervals", "kind": "interval", "reps": "8-10 min", "cues": "30s hard / 90s easy" }
+          ]
+        },
+        "HOTEL": {
+          "warmup": ["90/90 hip switches x8/side", "Couch / half-kneeling hip flexor stretch x30s/side", "Glute bridge x15, then single-leg x8/side", "World's greatest stretch x5/side", "5 min incline walk", "Leg swings"],
+          "exercises": [
+            { "name": "DB RDL or band deadlift", "kind": "strength", "sets": 3, "reps": "10-12", "load": "DB 50s, or band XL Heavy — reintro rule applies" },
+            { "name": "Goblet squat", "kind": "strength", "sets": 3, "reps": "10", "load": "50 lb" },
+            { "name": "Rear-foot-elevated split squat", "kind": "strength", "sets": 2, "reps": "8/leg", "unilateral": true },
+            { "name": "Banded lateral walk + clamshell", "kind": "strength", "sets": 1, "reps": "15/side each", "unilateral": true, "load": "travel band" },
+            { "name": "Band pull-through", "kind": "strength", "sets": 2, "reps": "15", "load": "Heavy, anchor low" },
+            { "name": "Suitcase carry", "kind": "carry", "sets": 3, "reps": "40 steps/side", "load": "50 lb DB", "unilateral": true },
+            { "name": "Finish: treadmill intervals", "kind": "interval", "reps": "8-10 min" }
+          ]
+        },
+        "BODYWEIGHT": {
+          "warmup": ["90/90 hip switches x8/side", "Couch / half-kneeling hip flexor stretch x30s/side", "Glute bridge x15, then single-leg x8/side", "World's greatest stretch x5/side"],
+          "exercises": [
+            { "name": "Bodyweight squat", "kind": "strength", "sets": 3, "reps": "20", "load": "bodyweight", "cues": "slow, full depth" },
+            { "name": "Single-leg RDL", "kind": "strength", "sets": 3, "reps": "10/leg", "unilateral": true, "load": "bodyweight", "cues": "the hinge of the day — slow, balanced" },
+            { "name": "Bulgarian split squat", "kind": "strength", "sets": 3, "reps": "10/leg", "unilateral": true, "load": "bodyweight", "cues": "rear foot on bed/chair" },
+            { "name": "Single-leg glute bridge", "kind": "strength", "sets": 3, "reps": "12/leg", "unilateral": true, "load": "bodyweight" },
+            { "name": "Side plank", "kind": "hold", "sets": 2, "reps": "40s/side", "unilateral": true },
+            { "name": "Finish: run/jog/brisk walk or squat-jump intervals", "kind": "interval", "reps": "15 min run OR 4 rounds 40s squat jumps / 20s rest" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "full_body_conditioning",
+      "name": "Full Body + Conditioning",
+      "focus": "Full body + conditioning (ACFT 2-mile + SDC prep)",
+      "timeCapMin": 60,
+      "rules": [
+        "TIME CAP ~60 min (warm-up ~8 / circuit ~25 / run conditioning ~15-20). One sanctioned exception: easy zone-2 cardio may carry total to 80 min MAX.",
+        "Conditioning is the POINT of this day. If cutting for time, cut a circuit round, never the run — the run is the ACFT event, the circuit is the garnish.",
+        "Circuit logging: rounds + total time + RPE. Same work faster or at lower RPE = progress."
+      ],
+      "variants": {
+        "FULL_GYM": {
+          "warmup": ["90/90 hip switches x8/side", "Couch / half-kneeling hip flexor stretch x30s/side", "Glute bridge x15, then single-leg x8/side", "World's greatest stretch x5/side", "Fire hydrants x12/side"],
+          "exercises": [
+            { "name": "Circuit", "kind": "circuit", "rounds": 4, "rest": "~60s", "movements": ["KB/DB swing x15", "Goblet squat x12", "Push-ups x10", "DB row x12/arm", "Farmer carry 40 yd"] },
+            { "name": "Conditioning: treadmill", "kind": "interval", "reps": "15 min", "cues": "4 x (2 min hard / 2 min easy) — 2-mile prep" },
+            { "name": "Optional: easy zone-2 walk or bike", "kind": "conditioning", "reps": "15 min", "optional": true, "cues": "→ 80 min MAX — exception, not rule" }
+          ]
+        },
+        "HOME": {
+          "warmup": ["90/90 hip switches x8/side", "Couch / half-kneeling hip flexor stretch x30s/side", "Glute bridge x15, then single-leg x8/side", "World's greatest stretch x5/side"],
+          "exercises": [
+            { "name": "KB swing", "kind": "strength", "sets": 4, "reps": "15", "load": "30 lb", "cues": "trimmed from 5x20 — Friday swing volume on Monday hinge work is what wrecked the back in week 1" },
+            { "name": "KB thruster", "kind": "strength", "sets": 3, "reps": "10" },
+            { "name": "Push-ups", "kind": "amrap", "sets": 3, "reps": "AMRAP" },
+            { "name": "Band row", "kind": "strength", "sets": 3, "reps": "15" },
+            { "name": "Finish: Peloton intervals", "kind": "interval", "reps": "15-20 min", "cues": "this IS the session's cardio, not optional" }
+          ]
+        },
+        "HOTEL": {
+          "warmup": ["90/90 hip switches x8/side", "Couch / half-kneeling hip flexor stretch x30s/side", "Glute bridge x15, then single-leg x8/side", "World's greatest stretch x5/side"],
+          "exercises": [
+            { "name": "Band complex", "kind": "circuit", "rounds": 3, "rest": "minimal", "movements": ["Band squat x12", "Band row x12", "Band overhead press x10", "Band RDL x12"], "load": "Medium/Heavy" },
+            { "name": "DB thruster", "kind": "strength", "sets": 3, "reps": "10", "optional": true, "cues": "if dumbbells available" },
+            { "name": "Conditioning: treadmill", "kind": "interval", "reps": "20 min", "cues": "alternate easy running with 2-min pushes" },
+            { "name": "Optional: band woodchop", "kind": "strength", "sets": 3, "reps": "12/side", "unilateral": true, "optional": true }
+          ]
+        },
+        "BODYWEIGHT": {
+          "warmup": ["90/90 hip switches x8/side", "Couch / half-kneeling hip flexor stretch x30s/side", "Glute bridge x15, then single-leg x8/side", "World's greatest stretch x5/side", "Fire hydrants x12/side", "Donkey kicks x12/side"],
+          "exercises": [
+            { "name": "Calisthenics circuit", "kind": "circuit", "rounds": 4, "rest": "~60s", "movements": ["Squat jumps x15", "Push-ups x10", "Reverse lunges x10/leg", "Mountain climbers x20/side", "Bear crawl x20 steps"], "cues": "benchmark ~3:30/round" },
+            { "name": "Core finisher", "kind": "circuit", "rounds": 2, "rest": "minimal", "movements": ["Dead bug x10/side", "Bird dog x10/side", "Side plank 30s/side"] },
+            { "name": "Conditioning: run/jog or intervals", "kind": "interval", "reps": "1-2 miles OR 10 min of 30s hard / 30s easy" }
+          ]
+        }
+      }
+    }
+  ]
+}
