@@ -266,8 +266,8 @@ function renderRows(e, i) {
 
   const labels = ({
     strength: band
-      ? (uni ? ['', 'band', 'L reps', 'R reps', 'RPE', ''] : ['', 'band', 'reps', 'RPE', ''])
-      : (uni ? ['', 'wt', '', 'L reps', 'R reps', 'RPE', ''] : ['', 'weight', '', 'reps', 'RPE', '']),
+      ? (uni ? ['', 'band', 'L reps', 'R reps', 'L RPE', 'R RPE', ''] : ['', 'band', 'reps', 'RPE', ''])
+      : (uni ? ['', 'wt', '', 'L reps', 'R reps', 'L RPE', 'R RPE', ''] : ['', 'weight', '', 'reps', 'RPE', '']),
     amrap: ['', 'reps', 'RPE', ''],
     hold: uni ? ['', 'L sec', 'R sec', 'RPE', ''] : ['', 'seconds', 'RPE', ''],
     carry: ['', 'weight', '', 'steps', 'RPE', ''],
@@ -293,14 +293,14 @@ function renderRows(e, i) {
     if (kind === 'strength' && band && uni) {
       cells = idx + bandSelect(i, ri, r.bandRank)
         + inp(i, ri, 'repsL', r.repsL, 'L', NUM) + inp(i, ri, 'repsR', r.repsR, 'R', NUM)
-        + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+        + inp(i, ri, 'rpeL', r.rpeL, 'L', NUM) + inp(i, ri, 'rpeR', r.rpeR, 'R', NUM) + del(i, ri);
     } else if (kind === 'strength' && band) {
       cells = idx + bandSelect(i, ri, r.bandRank)
         + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
     } else if (kind === 'strength' && uni) {
       cells = idx + inp(i, ri, 'weight', r.weight, 'lb', DEC) + countSelect(i, ri, r.count)
         + inp(i, ri, 'repsL', r.repsL, 'L', NUM) + inp(i, ri, 'repsR', r.repsR, 'R', NUM)
-        + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+        + inp(i, ri, 'rpeL', r.rpeL, 'L', NUM) + inp(i, ri, 'rpeR', r.rpeR, 'R', NUM) + del(i, ri);
     } else if (kind === 'strength') {
       cells = idx + inp(i, ri, 'weight', r.weight, 'lb', DEC) + countSelect(i, ri, r.count)
         + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);

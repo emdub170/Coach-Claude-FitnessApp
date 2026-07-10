@@ -29,7 +29,7 @@ So logging is fast on a phone, and Claude gets clean data to track progress from
 2. **Begin** → each exercise is a card with its target sets/reps/load and coaching cues, plus the
    right logging widget:
    - **Strength** — pick **Weight** (lbs, ×2/×1/bar) or **Band** (resistance-band color),
-     then reps, RPE (unilateral shows L/R reps). Band color *is* the load — see below.
+     then reps, RPE (unilateral shows L/R reps **and L/R RPE**). Band color *is* the load — see below.
    - **AMRAP** — reps, RPE
    - **Holds** (plank/side plank) — seconds, RPE
    - **Carries** — weight, steps, RPE
@@ -53,7 +53,8 @@ Matches how you already log, so Claude reads it natively:
 | `50.2x10 -8` | 50 lb, **2** implements (pair), 10 reps, RPE 8 |
 | `50.1x10 -6` | 50 lb, **1** implement (goblet/single), 10 reps, RPE 6 |
 | `155x5 -9` | barbell (no implement count) 155 lb, 5 reps, RPE 9 |
-| `BWx10L, 10R -6` | bodyweight, 10 left / 10 right, RPE 6 |
+| `BWx10L, 10R -6` | bodyweight, 10 left / 10 right, RPE 6 (both sides) |
+| `BWx10L -8, 10R -7` | 10 left @ RPE 8, 10 right @ RPE 7 (per-side effort) |
 | `[Grey]x20 -5` | **grey band**, 20 reps, RPE 5 (band color is the load) |
 | `[Dark Green]x10L, 10R -8` | dark-green band, unilateral 10 L / 10 R, RPE 8 |
 | `4 rounds — 3:27 -7, 3:37 -8, …` | circuit rounds with time + RPE |
