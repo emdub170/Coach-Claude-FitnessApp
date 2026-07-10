@@ -28,7 +28,8 @@ So logging is fast on a phone, and Claude gets clean data to track progress from
 1. **Start a workout** → pick your **location**, then the **workout type**. You'll see a preview.
 2. **Begin** → each exercise is a card with its target sets/reps/load and coaching cues, plus the
    right logging widget:
-   - **Strength** — weight, ×2/×1/bar, reps, RPE (unilateral shows L/R reps)
+   - **Strength** — pick **Weight** (lbs, ×2/×1/bar) or **Band** (resistance-band color),
+     then reps, RPE (unilateral shows L/R reps). Band color *is* the load — see below.
    - **AMRAP** — reps, RPE
    - **Holds** (plank/side plank) — seconds, RPE
    - **Carries** — weight, steps, RPE
@@ -53,8 +54,17 @@ Matches how you already log, so Claude reads it natively:
 | `50.1x10 -6` | 50 lb, **1** implement (goblet/single), 10 reps, RPE 6 |
 | `155x5 -9` | barbell (no implement count) 155 lb, 5 reps, RPE 9 |
 | `BWx10L, 10R -6` | bodyweight, 10 left / 10 right, RPE 6 |
+| `[Grey]x20 -5` | **grey band**, 20 reps, RPE 5 (band color is the load) |
+| `[Dark Green]x10L, 10R -8` | dark-green band, unilateral 10 L / 10 R, RPE 8 |
 | `4 rounds — 3:27 -7, 3:37 -8, …` | circuit rounds with time + RPE |
 | `60s x 7.0 / 90s x 2.7` | treadmill interval segments |
+
+Bands log by **color** because color *is* the load. Under the hood each band carries a
+**rank** (`1` = lightest, ascending) — that rank is what progression compares on, so a higher-rank
+band reads as more load exactly like more lbs. The lb range shown next to a band is descriptive
+only (bands overlap by stretch); the app never infers rank from it. Edit your real band ladder
+(reorder, rename, recolor, add, edit ranges) under **Resistance bands** on the home screen — it's
+your equipment, so those edits are saved on-device and survive program imports.
 
 ---
 
@@ -127,6 +137,10 @@ icons/                   app icons
 {
   "version": "2026-07-09",
   "locations": [ { "id": "HOTEL", "name": "Hotel", "hint": "dumbbells to 50 / travel bands" } ],
+  "bands": [
+    { "rank": 1, "label": "Light", "color": "Black", "colorHex": "#111318", "lbRangeLow": 15, "lbRangeHigh": 35 },
+    { "rank": 2, "label": "Medium", "color": "Grey", "colorHex": "#9aa3ad", "lbRangeLow": 30, "lbRangeHigh": 70 }
+  ],
   "globalRules": [ "Floor = show up and start. 15 minutes counts as a win." ],
   "workouts": [
     {
@@ -150,6 +164,11 @@ icons/                   app icons
 
 `kind` ∈ `strength · amrap · hold · circuit · interval · carry · conditioning` — it selects the
 logging widget. Optional per-exercise fields: `load`, `cues`, `unilateral`, `optional`.
+
+Top-level `bands` (optional) seeds the resistance-band ladder: an ordered list of
+`{ rank, label, color, colorHex?, lbRangeLow?, lbRangeHigh? }`. It's just a starting point — the
+user's on-device band edits (made under **Resistance bands**) take precedence and aren't wiped by a
+program import.
 
 ---
 

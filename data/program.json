@@ -2,6 +2,12 @@
   "version": "2026-07-09",
   "athlete": "Mike",
   "goal": "ACFT prep (push-ups / plank, deadlift, 2-mile run, sprint-drag-carry)",
+  "bands": [
+    { "rank": 1, "label": "Light", "color": "Black", "colorHex": "#111318", "lbRangeLow": 15, "lbRangeHigh": 35 },
+    { "rank": 2, "label": "Medium", "color": "Grey", "colorHex": "#9aa3ad", "lbRangeLow": 30, "lbRangeHigh": 70 },
+    { "rank": 3, "label": "Heavy", "color": "Dark Green", "colorHex": "#1e6b3a", "lbRangeLow": 50, "lbRangeHigh": 124 },
+    { "rank": 4, "label": "XL Heavy", "color": "Light Green", "colorHex": "#6fce8f", "lbRangeLow": 65, "lbRangeHigh": 175 }
+  ],
   "locations": [
     { "id": "FULL_GYM", "name": "Full Gym", "hint": "AT base gym / nice hotel" },
     { "id": "HOME", "name": "Home", "hint": "Peloton / kettlebells / bands" },
@@ -11,7 +17,7 @@
   "globalRules": [
     "Floor = show up and start. 15 minutes counts as a win.",
     "Pick the version for where you woke up. During AT: FULL GYM is the default.",
-    "Log shorthand: 50.2x10 -8 = 50 lb, 2 implements (pair), 10 reps, RPE 8. BWx10L/10R = bodyweight, unilateral. Circuits: rounds + total time + RPE. Intervals: seconds x speed."
+    "Log shorthand: 50.2x10 -8 = 50 lb, 2 implements (pair), 10 reps, RPE 8. BWx10L/10R = bodyweight, unilateral. Band load shows the color in brackets: [Grey]x20 -5 = grey band, 20 reps, RPE 5; [Dark Green]x10L, 10R -8 = dark-green band, unilateral. Rank (lightest=1) is the load — a higher-rank band is progression, like more lbs. Circuits: rounds + total time + RPE. Intervals: seconds x speed."
   ],
   "workouts": [
     {
