@@ -5,8 +5,15 @@ import { isRowFilled } from './logger.js';
 
 function rpe(v) { return v ? ` -${v}` : ''; }
 
-// weight + implement-count prefix: "50.2", "155" (barbell), or "BW" (bodyweight)
+// Load prefix for a set. Band load reads the color/label in brackets so it can
+// never be mistaken for a weight (band color IS the load — "[Grey]x20", never
+// "0x20"). Weight load keeps the existing prefix: "50.2", "155" (barbell), or
+// "BW" (bodyweight). The band label is denormalized onto the row at log time.
 function loadPrefix(row) {
+  if (row.loadType === 'band') {
+    const label = (row.bandLabel ?? '').toString().trim();
+    return label ? `[${label}]` : (row.bandRank != null ? `[Band ${row.bandRank}]` : '[band]');
+  }
   const w = (row.weight ?? '').toString().trim();
   if (!w) return 'BW';
   if (row.count === 1 || row.count === 2) return `${w}.${row.count}`;

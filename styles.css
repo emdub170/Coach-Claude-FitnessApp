@@ -120,6 +120,8 @@ input[inputmode="numeric"], input[inputmode="decimal"] { text-align: center; }
 
 .row-strength { grid-template-columns: 16px 1.2fr .8fr 1fr .8fr auto; }
 .row-strength-uni { grid-template-columns: 16px 1.1fr .7fr .8fr .8fr .8fr auto; }
+.row-strength-band { grid-template-columns: 16px 2fr 1fr .8fr auto; }
+.row-strength-band-uni { grid-template-columns: 16px 1.7fr .8fr .8fr .8fr auto; }
 .row-amrap { grid-template-columns: 16px 1fr 1fr auto; }
 .row-hold { grid-template-columns: 16px 1.4fr .8fr auto; }
 .row-hold-uni { grid-template-columns: 16px 1fr 1fr .8fr auto; }
@@ -132,6 +134,29 @@ input[inputmode="numeric"], input[inputmode="decimal"] { text-align: center; }
 .addrow { justify-self: start; }
 
 .notefield { margin-top: 8px; }
+
+/* Load-type toggle (Weight / Band) on strength entries */
+.loadtype { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; }
+.loadtype-label { color: var(--muted); font-size: 12px; margin-right: 2px; }
+.loadtype-btn {
+  min-height: 32px; padding: 0 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg-2); color: var(--muted);
+  font-size: 13px; font-weight: 600;
+}
+.loadtype-btn.on { border-color: var(--accent); background: var(--card-2); color: var(--text); box-shadow: 0 0 0 1px var(--accent) inset; }
+select.bandpick { font-weight: 600; }
+
+/* Band ladder editor */
+.band-edit { padding: 12px; }
+.band-edit-head { display: flex; align-items: center; gap: 8px; }
+.band-edit-head .spacer { flex: 1; }
+.band-edit-head .del:hover { color: var(--danger); }
+.swatch { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--line); flex: none; }
+.rank-pill { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--card-2); color: var(--muted); border: 1px solid var(--line); }
+.iconbtn.ghosted { opacity: .25; cursor: default; }
+.band-grid { display: grid; grid-template-columns: 1fr 1fr 64px; gap: 6px 8px; margin-top: 8px; align-items: center; }
+.band-grid .field { margin: 0; }
+.band-grid input.hexpick { min-height: 40px; padding: 2px; }
 
 /* Warmup */
 .warmup label { display: flex; align-items: center; gap: 10px; padding: 6px 0; }

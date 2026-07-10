@@ -18,10 +18,16 @@ function defaultCount(ex) {
 export function newRow(kind, ex) {
   const uni = !!(ex && ex.unilateral);
   switch (kind) {
-    case 'strength':
+    case 'strength': {
+      // loadType picks how this set's load is stored: 'weight' (lbs, the
+      // existing behavior) or 'band' (an ordinal tension rank + denormalized
+      // label). Defaults to weight; band is chosen per-entry in the logger.
+      // Band and per-side reps coexist — band presses are often unilateral.
+      const base = { loadType: 'weight', weight: '', count: defaultCount(ex), bandRank: null, bandLabel: '' };
       return uni
-        ? { weight: '', count: defaultCount(ex), repsL: '', repsR: '', rpe: '', note: '' }
-        : { weight: '', count: defaultCount(ex), reps: '', rpe: '', note: '' };
+        ? { ...base, repsL: '', repsR: '', rpe: '', note: '' }
+        : { ...base, reps: '', rpe: '', note: '' };
+    }
     case 'amrap':
       return { reps: '', rpe: '', note: '' };
     case 'hold':
@@ -91,7 +97,22 @@ export function createSession(workout, location, variant) {
 }
 
 export function addRow(entry) {
-  entry.rows.push(newRow(entry.kind, entry));
+  const row = newRow(entry.kind, entry);
+  // Inherit the load type (weight vs band) from the previous set so a band
+  // exercise keeps showing the band picker on every added set.
+  if (entry.kind === 'strength' && entry.rows.length) {
+    const prev = entry.rows[entry.rows.length - 1];
+    if (prev.loadType) row.loadType = prev.loadType;
+  }
+  entry.rows.push(row);
+  return entry;
+}
+
+// Flip an entire strength entry between weight- and band-load logging. Applied
+// to every set so the whole exercise shares one load type.
+export function setEntryLoadType(entry, loadType) {
+  if (entry.kind !== 'strength') return entry;
+  entry.rows.forEach(r => { r.loadType = loadType; });
   return entry;
 }
 
@@ -103,7 +124,7 @@ export function removeRow(entry, idx) {
 // Has the user entered anything worth exporting for this entry?
 export function isRowFilled(kind, row) {
   switch (kind) {
-    case 'strength': return !!(row.reps || row.repsL || row.repsR || row.weight);
+    case 'strength': return !!(row.reps || row.repsL || row.repsR || row.weight || row.bandRank != null && row.bandRank !== '');
     case 'amrap': return !!row.reps;
     case 'hold': return !!(row.seconds || row.secondsL || row.secondsR);
     case 'carry': return !!(row.steps || row.weight);

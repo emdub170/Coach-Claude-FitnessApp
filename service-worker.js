@@ -1,5 +1,5 @@
 // service-worker.js — offline app shell. Bump CACHE on any asset change.
-const CACHE = 'coach-claude-v1';
+const CACHE = 'coach-claude-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const ASSETS = [
   './js/store.js',
   './js/logger.js',
   './js/export.js',
+  './js/bands.js',
   './data/program.json',
   './icons/icon.svg',
   './icons/icon-192.png',
