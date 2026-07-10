@@ -25,10 +25,18 @@ function fmtRow(kind, row) {
     case 'strength': {
       const pre = loadPrefix(row);
       if (row.repsL !== undefined) { // unilateral
+        // Effort per side. Old records only have a single `rpe`; treat it as
+        // applying to both sides (no migration — we just read both shapes).
+        const effL = row.rpeL ?? row.rpe;
+        const effR = row.rpeR ?? row.rpe;
+        // Collapse to a single trailing RPE when both sides match (or only one
+        // value exists); split it onto each side when they differ.
+        const perSide = (effL || effR) && effL !== effR;
         const parts = [];
-        if (row.repsL) parts.push(`${row.repsL}L`);
-        if (row.repsR) parts.push(`${row.repsR}R`);
-        return `${pre}x${parts.join(', ')}${rpe(row.rpe)}`;
+        if (row.repsL) parts.push(`${row.repsL}L${perSide ? rpe(effL) : ''}`);
+        if (row.repsR) parts.push(`${row.repsR}R${perSide ? rpe(effR) : ''}`);
+        const tail = perSide ? '' : rpe(effL || effR);
+        return `${pre}x${parts.join(', ')}${tail}`;
       }
       return `${pre}x${row.reps}${rpe(row.rpe)}`;
     }

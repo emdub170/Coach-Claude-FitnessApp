@@ -23,9 +23,11 @@ export function newRow(kind, ex) {
       // existing behavior) or 'band' (an ordinal tension rank + denormalized
       // label). Defaults to weight; band is chosen per-entry in the logger.
       // Band and per-side reps coexist — band presses are often unilateral.
+      // Unilateral strength also tracks effort per side (rpeL/rpeR) — left/right
+      // asymmetry is core data for this program. Bilateral keeps a single rpe.
       const base = { loadType: 'weight', weight: '', count: defaultCount(ex), bandRank: null, bandLabel: '' };
       return uni
-        ? { ...base, repsL: '', repsR: '', rpe: '', note: '' }
+        ? { ...base, repsL: '', repsR: '', rpeL: '', rpeR: '', note: '' }
         : { ...base, reps: '', rpe: '', note: '' };
     }
     case 'amrap':
