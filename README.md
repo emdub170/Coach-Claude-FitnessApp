@@ -175,9 +175,9 @@ program import.
 
 ## Roadmap (next features)
 
-- One-tap "export since last check-in" with a prewritten Claude prompt
-- Rest timer + elapsed-session timer
+- ~~One-tap "export since last check-in" with a prewritten Claude prompt~~ ✅ **Copy with Claude prompt** on the Export screen
+- ~~Rest timer + elapsed-session timer~~ ✅ rest presets (1:00/1:30/2:00, vibrates when done) + a ticking session clock on the workout screen
+- ~~Show last session's numbers as targets (progressive-overload hints)~~ ✅ each exercise card shows "Last time: …" from your most recent session of that workout type
 - "Today's workout" auto-suggestion from your schedule
-- Show last session's numbers as targets (progressive-overload hints)
 - Optional auto-sync (Google Drive / Sheets / Calendar), Garmin import, charts, bodyweight tracking
 - July push-up challenge counter (1776)

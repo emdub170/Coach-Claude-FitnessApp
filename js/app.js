@@ -7,8 +7,8 @@ import {
   getSessions, getSession, saveSession, deleteSession,
   getMeta, setMeta, newSessionId
 } from './store.js';
-import { createSession, addRow, removeRow, setEntryLoadType, todayISO } from './logger.js';
-import { toMarkdown, toJSON, filterSince, isoDaysAgo } from './export.js';
+import { createSession, addRow, removeRow, setEntryLoadType, todayISO, isEntryLogged } from './logger.js';
+import { toMarkdown, toJSON, sessionMarkdown, entrySummary, filterSince, isoDaysAgo } from './export.js';
 import {
   loadBands, saveBands, resetBands, hasBandOverride,
   bandDisplay, findBandByRank
@@ -41,9 +41,27 @@ async function boot() {
 }
 
 function registerSW() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
-  }
+  if (!('serviceWorker' in navigator)) return;
+  // Only a *replacement* controller means "new version live" — on first install
+  // there is no controller yet, so that claim shouldn't trigger the banner.
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController) updateBanner();
+  });
+  navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+}
+
+// Persistent "app updated" banner — cache-first serving means the running page
+// is still the old version until it reloads, so tell the user instead of
+// waiting for them to remember.
+function updateBanner() {
+  if (document.getElementById('sw-update-banner')) return;
+  const bar = document.createElement('button');
+  bar.id = 'sw-update-banner';
+  bar.className = 'notice good updatebar';
+  bar.textContent = 'App updated — tap to reload';
+  bar.addEventListener('click', () => location.reload());
+  document.body.appendChild(bar);
 }
 
 // ---- router ------------------------------------------------------------
@@ -60,11 +78,14 @@ async function render() {
   const { path, arg } = route();
   if (path !== 'bands') bandDraft = null; // discard unsaved ladder edits on leaving
   appEl.classList.toggle('has-actionbar', path === 'workout' || path === 'pick');
+  document.querySelectorAll('.topnav a').forEach(a =>
+    a.classList.toggle('active', a.getAttribute('href') === '#/' + path));
+  syncTimers(path);
   let html = '';
   switch (path) {
     case '': html = homeScreen(); break;
     case 'pick': html = pickScreen(); break;
-    case 'workout': html = workoutScreen(); break;
+    case 'workout': html = await workoutScreen(); break;
     case 'history': html = await historyScreen(); break;
     case 'session': html = await sessionScreen(arg); break;
     case 'export': html = await exportScreen(); break;
@@ -83,13 +104,19 @@ function homeScreen() {
   const srcNote = PROG.source === 'imported'
     ? `<div class="notice good">Using Coach Claude's imported program (v${esc(p.version || '?')}).</div>`
     : '';
+  const resume = active ? `
+      <a class="tile resume" href="#/workout">
+        <div class="big">▶ Resume workout</div>
+        <div class="sub">${esc(active.workoutName)} · ${esc(active.locationName)} · ${esc(active.date)}</div>
+      </a>` : '';
   return `
     <h1>Coach Claude</h1>
     <p class="lead">${esc(p.goal || 'Training')}</p>
     ${srcNote}
     <div class="tiles">
+      ${resume}
       <a class="tile" href="#/pick">
-        <div class="big">▶ Start a workout</div>
+        <div class="big">${active ? 'Start a different workout' : '▶ Start a workout'}</div>
         <div class="sub">Pick where you are and what you're training</div>
       </a>
       <a class="tile" href="#/history">
@@ -117,12 +144,15 @@ function homeScreen() {
 
 function pickScreen() {
   const p = PROG.program;
+  const inProgress = active ? `
+    <div class="notice warn">A workout is in progress (${esc(active.workoutName)}) —
+      <a href="#/workout">resume it</a>. Beginning a new one replaces it.</div>` : '';
   const locChips = p.locations.map(l => `
-    <button class="chip ${pick.location === l.id ? 'selected' : ''}" data-pick-loc="${esc(l.id)}">
+    <button class="chip ${pick.location === l.id ? 'selected' : ''}" aria-pressed="${pick.location === l.id}" data-pick-loc="${esc(l.id)}">
       ${esc(l.name)}<span class="hint">${esc(l.hint || '')}</span>
     </button>`).join('');
   const wChips = p.workouts.map(w => `
-    <button class="chip ${pick.workoutId === w.id ? 'selected' : ''}" data-pick-workout="${esc(w.id)}">
+    <button class="chip ${pick.workoutId === w.id ? 'selected' : ''}" aria-pressed="${pick.workoutId === w.id}" data-pick-workout="${esc(w.id)}">
       ${esc(w.name)}<span class="hint">${esc(w.focus || '')}</span>
     </button>`).join('');
 
@@ -138,6 +168,7 @@ function pickScreen() {
   const ready = pick.location && pick.workoutId;
   return `
     <h1>Start a workout</h1>
+    ${inProgress}
     <h2>Where are you?</h2>
     <div class="chips">${locChips}</div>
     <h2>What are you training?</h2>
@@ -160,9 +191,10 @@ function targetText(e) {
   return bits.join(' · ');
 }
 
-function workoutScreen() {
+async function workoutScreen() {
   if (!active) return `<div class="empty">No workout in progress.<br><a class="btn primary" href="#/pick" style="margin-top:16px">Start one</a></div>`;
   const s = active;
+  const last = await lastSessionOfType(s.workoutId);
   const warmupItems = (s.warmup || []).map(w => `<li>${esc(w)}</li>`).join('');
   const warmup = (s.warmup && s.warmup.length) ? `
     <div class="card warmup">
@@ -170,9 +202,13 @@ function workoutScreen() {
       <ul>${warmupItems}</ul>
     </div>` : '';
 
-  const entries = s.entries.map((e, i) => entryCard(e, i)).join('');
+  const entries = s.entries.map((e, i) => entryCard(e, i, last)).join('');
+  const elapsedSec = Math.max(0, Math.floor((Date.now() - Date.parse(s.startedAt)) / 1000));
+  const elapsedMin = Math.max(1, Math.round(elapsedSec / 60));
+  const useElapsed = s.date === todayISO()
+    ? `<button class="btn sm ghost" data-action="use-elapsed">use elapsed (~${elapsedMin} min)</button>` : '';
   return `
-    <h1>${esc(s.workoutName)} <span class="pill">${esc(s.locationName)}</span></h1>
+    <h1>${esc(s.workoutName)} <span class="pill">${esc(s.locationName)}</span> <span class="pill timer" id="elapsed-timer">⏱ ${fmtClock(elapsedSec)}</span></h1>
     <div class="card datebox">
       <label class="field" for="session-date">Training date</label>
       <input type="date" id="session-date" data-session-date value="${esc(s.date)}" max="${esc(todayISO())}" />
@@ -184,17 +220,38 @@ function workoutScreen() {
       <label class="field">Session notes</label>
       <textarea data-session-notes placeholder="How it felt, pain flags, time crunch, form notes...">${esc(s.notes || '')}</textarea>
       <label class="field">Duration (min)</label>
-      <input inputmode="numeric" data-session-duration value="${esc(s.durationMin ?? '')}" placeholder="e.g. 58" style="max-width:140px" />
+      <div class="duration-row">
+        <input inputmode="numeric" data-session-duration value="${esc(s.durationMin ?? '')}" placeholder="e.g. 58" style="max-width:140px" />
+        ${useElapsed}
+      </div>
     </div>
+    ${restBarHTML()}
     <div class="actionbar">
       <button class="btn ghost" data-action="discard">Discard</button>
       <button class="btn good" data-action="finish">Finish &amp; Save</button>
     </div>`;
 }
 
-function entryCard(e, i) {
+// Most recent saved session of this workout type, mapped entry-name → shorthand
+// ("last session of this type" is what progression targets read from).
+async function lastSessionOfType(workoutId) {
+  const sessions = await getSessions(); // already sorted newest-first
+  const prev = sessions.find(x => x.workoutId === workoutId);
+  if (!prev) return null;
+  const byName = {};
+  for (const e of prev.entries || []) {
+    if (e.skipped) continue;
+    const summary = entrySummary(e);
+    if (summary) byName[e.name] = summary;
+  }
+  return Object.keys(byName).length ? { date: prev.date, byName } : null;
+}
+
+function entryCard(e, i, last) {
   const badge = e.optional ? '<span class="badge opt">optional</span>' : '';
   const skip = `<button class="btn sm ghost" data-skip="${i}">${e.skipped ? 'Un-skip' : 'Skip'}</button>`;
+  const lastLine = (last && last.byName[e.name])
+    ? `<div class="lasttime">Last time (${esc(last.date)}): ${esc(last.byName[e.name])}</div>` : '';
   const cues = e.cues ? `<p class="cues">${esc(e.cues)}</p>` : '';
   const movements = e.target.movements
     ? `<ul class="movements">${e.target.movements.map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : '';
@@ -209,6 +266,7 @@ function entryCard(e, i) {
         <div>
           <div class="entry-title">${esc(e.name)} ${badge}</div>
           <div class="target">${esc(targetLine(e))}</div>
+          ${lastLine}
         </div>
         ${skip}
       </div>
@@ -293,33 +351,33 @@ function renderRows(e, i) {
     if (kind === 'strength' && band && uni) {
       cells = idx + bandSelect(i, ri, r.bandRank)
         + inp(i, ri, 'repsL', r.repsL, 'L', NUM) + inp(i, ri, 'repsR', r.repsR, 'R', NUM)
-        + inp(i, ri, 'rpeL', r.rpeL, 'L', NUM) + inp(i, ri, 'rpeR', r.rpeR, 'R', NUM) + del(i, ri);
+        + inp(i, ri, 'rpeL', r.rpeL, 'L', DEC) + inp(i, ri, 'rpeR', r.rpeR, 'R', DEC) + del(i, ri);
     } else if (kind === 'strength' && band) {
       cells = idx + bandSelect(i, ri, r.bandRank)
-        + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+        + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', DEC) + del(i, ri);
     } else if (kind === 'strength' && uni) {
       cells = idx + inp(i, ri, 'weight', r.weight, 'lb', DEC) + countSelect(i, ri, r.count)
         + inp(i, ri, 'repsL', r.repsL, 'L', NUM) + inp(i, ri, 'repsR', r.repsR, 'R', NUM)
-        + inp(i, ri, 'rpeL', r.rpeL, 'L', NUM) + inp(i, ri, 'rpeR', r.rpeR, 'R', NUM) + del(i, ri);
+        + inp(i, ri, 'rpeL', r.rpeL, 'L', DEC) + inp(i, ri, 'rpeR', r.rpeR, 'R', DEC) + del(i, ri);
     } else if (kind === 'strength') {
       cells = idx + inp(i, ri, 'weight', r.weight, 'lb', DEC) + countSelect(i, ri, r.count)
-        + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+        + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', DEC) + del(i, ri);
     } else if (kind === 'amrap') {
-      cells = idx + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+      cells = idx + inp(i, ri, 'reps', r.reps, 'reps', NUM) + inp(i, ri, 'rpe', r.rpe, '', DEC) + del(i, ri);
     } else if (kind === 'hold' && uni) {
       cells = idx + inp(i, ri, 'secondsL', r.secondsL, 'L', '') + inp(i, ri, 'secondsR', r.secondsR, 'R', '')
-        + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+        + inp(i, ri, 'rpe', r.rpe, '', DEC) + del(i, ri);
     } else if (kind === 'hold') {
-      cells = idx + inp(i, ri, 'seconds', r.seconds, '40s or 1:15', '') + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+      cells = idx + inp(i, ri, 'seconds', r.seconds, '40s or 1:15', '') + inp(i, ri, 'rpe', r.rpe, '', DEC) + del(i, ri);
     } else if (kind === 'carry') {
       cells = idx + inp(i, ri, 'weight', r.weight, 'lb', DEC) + countSelect(i, ri, r.count)
-        + inp(i, ri, 'steps', r.steps, 'steps', '') + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+        + inp(i, ri, 'steps', r.steps, 'steps', '') + inp(i, ri, 'rpe', r.rpe, '', DEC) + del(i, ri);
     } else if (kind === 'circuit') {
-      cells = idx + inp(i, ri, 'time', r.time, 'mm:ss', '') + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+      cells = idx + inp(i, ri, 'time', r.time, 'mm:ss', '') + inp(i, ri, 'rpe', r.rpe, '', DEC) + del(i, ri);
     } else if (kind === 'interval') {
       cells = idx + inp(i, ri, 'duration', r.duration, '60s', '') + inp(i, ri, 'speed', r.speed, '7.0 mph', '') + del(i, ri);
     } else if (kind === 'conditioning') {
-      cells = idx + inp(i, ri, 'summary', r.summary, 'e.g. 15 min, 10% incline, 2.5mph', '') + inp(i, ri, 'rpe', r.rpe, '', NUM) + del(i, ri);
+      cells = idx + inp(i, ri, 'summary', r.summary, 'e.g. 15 min, 10% incline, 2.5mph', '') + inp(i, ri, 'rpe', r.rpe, '', DEC) + del(i, ri);
     }
     const note = `<div class="notefield">${inp(i, ri, 'note', r.note, 'note (optional)', '')}</div>`;
     return `<div class="row ${cls}">${cells}</div>${note}`;
@@ -331,11 +389,64 @@ function renderRows(e, i) {
 // band work (color = load); weight keeps the lb + implement-count behavior.
 function strengthLoadToggle(i, band) {
   const btn = (lt, label, on) =>
-    `<button class="loadtype-btn ${on ? 'on' : ''}" data-loadtype="${i}" data-lt="${lt}">${label}</button>`;
+    `<button class="loadtype-btn ${on ? 'on' : ''}" aria-pressed="${on}" data-loadtype="${i}" data-lt="${lt}">${label}</button>`;
   return `<div class="loadtype" role="group" aria-label="Load type">
     <span class="loadtype-label">Load</span>
     ${btn('weight', 'Weight', !band)}${btn('band', 'Band', band)}
   </div>`;
+}
+
+// ---- timers --------------------------------------------------------------
+// One 1 Hz interval runs while the workout screen is up; it repaints the
+// elapsed clock and rest countdown by textContent only (no re-render, so
+// input focus is never disturbed mid-set).
+
+let tickInterval = null;
+let restEndsAt = null; // epoch ms when the rest countdown finishes
+
+function syncTimers(path) {
+  const on = path === 'workout' && !!active;
+  if (on && !tickInterval) tickInterval = setInterval(tickTimers, 1000);
+  if (!on && tickInterval) { clearInterval(tickInterval); tickInterval = null; restEndsAt = null; }
+}
+
+function fmtClock(totalSec) {
+  const m = Math.floor(totalSec / 60), s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function tickTimers() {
+  if (!active) return;
+  const el = document.getElementById('elapsed-timer');
+  if (el) {
+    const sec = Math.max(0, Math.floor((Date.now() - Date.parse(active.startedAt)) / 1000));
+    el.textContent = '⏱ ' + fmtClock(sec);
+  }
+  if (restEndsAt != null) {
+    const left = Math.ceil((restEndsAt - Date.now()) / 1000);
+    if (left <= 0) {
+      restEndsAt = null;
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      flash('Rest done — next set');
+      render();
+    } else {
+      const rest = document.getElementById('rest-remaining');
+      if (rest) rest.textContent = fmtClock(left);
+    }
+  }
+}
+
+// Rest pill above the actionbar: presets when idle, tap-to-cancel countdown when running.
+function restBarHTML() {
+  if (restEndsAt != null) {
+    const left = Math.max(0, Math.ceil((restEndsAt - Date.now()) / 1000));
+    return `<div class="restbar">
+      <span class="restbar-label">Rest</span>
+      <button class="restbtn on" data-action="rest-cancel" title="cancel rest timer"><span id="rest-remaining">${fmtClock(left)}</span> ✕</button>
+    </div>`;
+  }
+  const btn = s => `<button class="restbtn" data-rest="${s}">${fmtClock(s)}</button>`;
+  return `<div class="restbar"><span class="restbar-label">Rest</span>${btn(60)}${btn(90)}${btn(120)}</div>`;
 }
 
 async function historyScreen() {
@@ -357,7 +468,7 @@ async function historyScreen() {
 async function sessionScreen(id) {
   const s = await getSession(id);
   if (!s) return `<div class="empty">Session not found.</div>`;
-  const md = toMarkdown([s]).split('\n').slice(3).join('\n'); // drop file header
+  const md = sessionMarkdown(s);
   return `
     <h1>${esc(s.workoutName)}</h1>
     <div class="card datebox">
@@ -387,7 +498,10 @@ async function exportScreen() {
     <p class="muted small">Copy this into your Coach Claude chat and ask for a weekly adjustment. Claude returns an updated <code>program.json</code> you load under Import.</p>
     <pre class="export" id="export-md">${esc(md)}</pre>
     <div class="btn-row">
-      <button class="btn primary" data-copy="md">Copy Markdown</button>
+      <button class="btn primary" data-copy="prompt">Copy with Claude prompt</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" data-copy="md">Copy Markdown</button>
       <button class="btn ghost" data-copy="json">Copy JSON</button>
     </div>
     <div class="btn-row">
@@ -569,9 +683,6 @@ function persistActive() {
 
 function onInput(ev) {
   const t = ev.target;
-  if (!active && t.dataset.e === undefined) {
-    // still handle import textarea etc. below
-  }
   if (t.dataset.e !== undefined && active) {
     const e = +t.dataset.e, r = +t.dataset.r, f = t.dataset.f;
     const row = active.entries[e].rows[r];
@@ -606,8 +717,13 @@ function onInput(ev) {
 }
 
 async function onClick(ev) {
-  const t = ev.target.closest('[data-action],[data-pick-loc],[data-pick-workout],[data-addrow],[data-delrow],[data-skip],[data-del-session],[data-copy],[data-download],[data-loadtype],[data-band-move],[data-band-del]');
+  const t = ev.target.closest('[data-action],[data-pick-loc],[data-pick-workout],[data-addrow],[data-delrow],[data-skip],[data-del-session],[data-copy],[data-download],[data-loadtype],[data-band-move],[data-band-del],[data-rest]');
   if (!t) return;
+
+  if (t.dataset.rest !== undefined) {
+    restEndsAt = Date.now() + (+t.dataset.rest) * 1000;
+    return render();
+  }
 
   if (t.dataset.pickLoc) { pick.location = t.dataset.pickLoc; return render(); }
   if (t.dataset.pickWorkout) { pick.workoutId = t.dataset.pickWorkout; return render(); }
@@ -636,6 +752,12 @@ async function onClick(ev) {
   if (action === 'begin') return beginWorkout();
   if (action === 'discard') return discardWorkout();
   if (action === 'finish') return finishWorkout();
+  if (action === 'rest-cancel') { restEndsAt = null; return render(); }
+  if (action === 'use-elapsed' && active) {
+    active.durationMin = Math.max(1, Math.round((Date.now() - Date.parse(active.startedAt)) / 60000));
+    persistActive();
+    return render();
+  }
   if (action === 'mark-checkin') { await setMeta('last_checkin', new Date().toISOString().slice(0, 10)); return render(); }
   if (action === 'import-paste') return importPaste();
   if (action === 'rollback') return doRollback();
@@ -658,6 +780,9 @@ async function beginWorkout() {
   const l = getLocation(p, pick.location);
   const v = resolveVariant(p, pick.workoutId, pick.location);
   if (!w || !l || !v) return;
+  if (active && !confirm(`A workout is already in progress (${active.workoutName}) — replace it? Its logged sets will be lost.`)) {
+    return;
+  }
   active = createSession(w, l, v);
   await setMeta('active_session', active);
   location.hash = '#/workout';
@@ -672,6 +797,8 @@ async function discardWorkout() {
 
 async function finishWorkout() {
   if (!active) return;
+  const anythingLogged = active.entries.some(isEntryLogged) || active.warmupDone;
+  if (!anythingLogged && !confirm('Nothing logged yet — save this session anyway?')) return;
   active.id = active.id || newSessionId();
   await saveSession(active);
   await setMeta('active_session', null);
@@ -698,9 +825,22 @@ async function scopedSessions() {
   const lastCheckIn = await getMeta('last_checkin');
   return filterSince(sessions, lastCheckIn || isoDaysAgo(7));
 }
+// Prewritten weekly check-in ask, so a coach chat starts from one paste.
+const CHECKIN_PROMPT = `Coach Claude — weekly check-in. Below is my training log since the last check-in.
+
+Please:
+1. Give a short assessment of the week (adherence, progression, anything trending the wrong way).
+2. Flag anything concerning (pain notes, stalled lifts, missed sessions).
+3. Reply with an updated program.json I can import into the app (keep the same schema: locations, workouts, variants, bands).
+
+`;
+
 async function copyExport(kind) {
   const scoped = await scopedSessions();
-  const text = kind === 'md' ? toMarkdown(scoped) : toJSON(scoped);
+  const md = kind === 'json' ? null : toMarkdown(scoped);
+  const text = kind === 'json' ? toJSON(scoped)
+    : kind === 'prompt' ? CHECKIN_PROMPT + md
+    : md;
   try { await navigator.clipboard.writeText(text); flash('Copied to clipboard'); }
   catch { flash('Copy failed — long-press the text to select', true); }
 }

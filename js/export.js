@@ -66,25 +66,28 @@ function fmtRow(kind, row) {
   }
 }
 
-function entryLine(entry) {
+// The shorthand value of an entry's logged rows (no name prefix, no notes) —
+// e.g. "50.2x10 -8, 50.2x9 -9". Also used for "last time" hints in the logger.
+export function entrySummary(entry) {
   const filled = entry.rows.filter(r => isRowFilled(entry.kind, r));
   if (!filled.length) return null;
   const pieces = filled.map(r => fmtRow(entry.kind, r));
-  let value;
-  if (entry.kind === 'circuit') {
-    value = `${filled.length} rounds — ${pieces.join(', ')}`;
-  } else if (entry.kind === 'interval') {
-    value = pieces.join(' / ');
-  } else {
-    value = pieces.join(', ');
-  }
+  if (entry.kind === 'circuit') return `${filled.length} rounds — ${pieces.join(', ')}`;
+  if (entry.kind === 'interval') return pieces.join(' / ');
+  return pieces.join(', ');
+}
+
+function entryLine(entry) {
+  const value = entrySummary(entry);
+  if (value == null) return null;
+  const filled = entry.rows.filter(r => isRowFilled(entry.kind, r));
   // append any per-row notes
   const notes = filled.map(r => r.note).filter(Boolean);
   const noteStr = notes.length ? `  _(${notes.join('; ')})_` : '';
   return `- ${entry.name}: ${value}${noteStr}`;
 }
 
-function sessionMarkdown(s) {
+export function sessionMarkdown(s) {
   const head = `## ${s.date} — ${s.workoutName} (${s.locationName})` +
     (s.durationMin ? ` — ${s.durationMin} min` : '');
   const lines = [head];
@@ -123,7 +126,7 @@ export function toJSON(sessions) {
       }))
       .filter(e => e.rows.length)
   }));
-  return JSON.stringify({ program: sessions.programVersion || undefined, sessions: clean }, null, 2);
+  return JSON.stringify({ sessions: clean }, null, 2);
 }
 
 // ---- date helpers ------------------------------------------------------

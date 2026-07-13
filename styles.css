@@ -43,6 +43,7 @@ a { color: var(--accent); text-decoration: none; }
 .topnav { display: flex; gap: 14px; font-size: 14px; }
 .topnav a { color: var(--muted); }
 .topnav a:hover { color: var(--text); }
+.topnav a.active { color: var(--text); font-weight: 600; }
 
 .app { max-width: 720px; margin: 0 auto; padding: 16px 14px 90px; }
 
@@ -81,6 +82,7 @@ p.lead { color: var(--muted); margin: 0 0 16px; }
 .tile { display: block; padding: 18px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--line); color: var(--text); }
 .tile .big { font-size: 19px; font-weight: 700; }
 .tile .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.tile.resume { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 
 /* Chip pickers */
 .chips { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
@@ -100,6 +102,7 @@ p.lead { color: var(--muted); margin: 0 0 16px; }
 .badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--bg-2); color: var(--muted); border: 1px solid var(--line); }
 .badge.opt { color: var(--warn); border-color: var(--warn); }
 .target { color: var(--accent-2); font-size: 13.5px; margin: 2px 0 0; }
+.lasttime { color: var(--muted); font-size: 12.5px; margin: 2px 0 0; }
 .cues { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
 .movements { color: var(--muted); font-size: 13px; margin: 6px 0 0; padding-left: 18px; }
 
@@ -162,6 +165,41 @@ select.bandpick { font-weight: 600; }
 .warmup label { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
 .warmup input[type=checkbox] { width: 22px; height: 22px; min-height: 0; }
 .warmup ul { margin: 6px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+
+/* Elapsed-session pill in the workout title */
+.pill.timer { font-variant-numeric: tabular-nums; color: var(--accent-2); }
+
+/* Duration + "use elapsed" side by side */
+.duration-row { display: flex; align-items: center; gap: 10px; }
+.duration-row .btn { width: auto; }
+
+/* Rest timer — floating pill docked above the actionbar */
+.restbar {
+  position: fixed; right: 14px; bottom: calc(78px + env(safe-area-inset-bottom)); z-index: 19;
+  display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+  background: rgba(15,23,42,.95); border: 1px solid var(--line); border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+.restbar-label { color: var(--muted); font-size: 12px; }
+.restbtn {
+  min-height: 34px; padding: 0 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg-2); color: var(--text);
+  font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.restbtn.on { border-color: var(--accent); background: var(--card-2); box-shadow: 0 0 0 1px var(--accent) inset; }
+
+/* "App updated" banner */
+.updatebar {
+  position: fixed; left: 14px; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 60;
+  cursor: pointer; text-align: center; font: inherit; font-weight: 600;
+}
+
+/* Keyboard focus */
+.btn:focus-visible, .chip:focus-visible, .iconbtn:focus-visible,
+.loadtype-btn:focus-visible, .restbtn:focus-visible, .tile:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
 
 /* Sticky finish bar */
 .actionbar {
