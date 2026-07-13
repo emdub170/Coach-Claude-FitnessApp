@@ -101,8 +101,14 @@ PWA install):
 3. **Source:** *Deploy from a branch* → **Branch:** `main` → **Folder:** `/ (root)` → **Save**.
 4. Wait ~1 minute; your app is at `https://<your-username>.github.io/Coach-Claude-FitnessApp/`.
 
-Any change you push to `main` redeploys automatically. When you change app files, bump the
-`CACHE` version in `service-worker.js` so phones pick up the update.
+Any change you push to `main` redeploys automatically. When you change app files, bump
+`APP_VERSION` in `js/version.js` so phones pick up the update — the service worker cache name
+derives from it, and the same version is shown at the bottom of the home screen so you can
+confirm on your phone that the update landed.
+
+> **Don't update by deleting and re-adding the home-screen icon** — on iOS that wipes the app's
+> stored data (all workout history). Use the in-app "App updated — tap to reload" banner, and
+> use **Export** for periodic backups.
 
 ### Run locally
 

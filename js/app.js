@@ -29,10 +29,27 @@ const esc = s => (s == null ? '' : String(s).replace(/[&<>"]/g, c =>
 // ---- boot --------------------------------------------------------------
 
 async function boot() {
+  // Ask the browser not to evict our IndexedDB under storage pressure —
+  // best-effort, but without it an installed PWA's history can silently vanish.
+  try { navigator.storage?.persist?.(); } catch { /* unsupported */ }
   PROG = await loadProgram();
   BANDS = await loadBands(PROG.program); // resistance-band ladder (equipment, survives program import)
   active = await getMeta('active_session'); // resume mid-workout if any
+  try {
+    // A localStorage backup written at unload is newer than the debounced
+    // IndexedDB copy — prefer it, then fold it back into IndexedDB.
+    const backup = localStorage.getItem('cc_active_backup');
+    if (backup) {
+      active = JSON.parse(backup);
+      await setMeta('active_session', active);
+      localStorage.removeItem('cc_active_backup');
+    }
+  } catch { /* corrupt backup — fall back to the IndexedDB copy */ }
   window.addEventListener('hashchange', render);
+  window.addEventListener('pagehide', flushActive);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushActive();
+  });
   appEl.addEventListener('click', onClick);
   appEl.addEventListener('input', onInput);
   appEl.addEventListener('change', onInput);
@@ -44,11 +61,14 @@ function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   // Only a *replacement* controller means "new version live" — on first install
   // there is no controller yet, so that claim shouldn't trigger the banner.
-  const hadController = !!navigator.serviceWorker.controller;
+  let hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (hadController) updateBanner();
+    hadController = true; // later controller swaps are real updates, even in the first session
   });
-  navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  // updateViaCache: 'none' — version.js is pulled in via importScripts; without
+  // this the HTTP cache could hide a version bump from the SW update check.
+  navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' }).catch(() => {});
 }
 
 // Persistent "app updated" banner — cache-first serving means the running page
@@ -60,7 +80,10 @@ function updateBanner() {
   bar.id = 'sw-update-banner';
   bar.className = 'notice good updatebar';
   bar.textContent = 'App updated — tap to reload';
-  bar.addEventListener('click', () => location.reload());
+  bar.addEventListener('click', async () => {
+    await flushActive(); // don't drop edits still sitting in the save debounce
+    location.reload();
+  });
   document.body.appendChild(bar);
 }
 
@@ -139,7 +162,8 @@ function homeScreen() {
         <div class="big">Resistance bands</div>
         <div class="sub">${esc(BANDS.map(bandDisplay).join(' · ') || 'Set up your band ladder')}</div>
       </a>
-    </div>`;
+    </div>
+    <p class="version">Coach Claude · ${esc(self.APP_VERSION || '?')}</p>`;
 }
 
 function pickScreen() {
@@ -679,6 +703,21 @@ let saveTimer = null;
 function persistActive() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { if (active) setMeta('active_session', active); }, 300);
+}
+
+// Write the active session immediately, cancelling any pending debounce.
+// Called before reloads and when the app is backgrounded/closed. IndexedDB
+// writes started during unload can be discarded by the browser, so also
+// mirror synchronously to localStorage; boot() recovers from that copy.
+const BACKUP_KEY = 'cc_active_backup';
+function flushActive() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  try {
+    if (active) localStorage.setItem(BACKUP_KEY, JSON.stringify(active));
+    else localStorage.removeItem(BACKUP_KEY);
+  } catch { /* quota / private mode — IndexedDB write below still runs */ }
+  return active ? setMeta('active_session', active) : Promise.resolve();
 }
 
 function onInput(ev) {
