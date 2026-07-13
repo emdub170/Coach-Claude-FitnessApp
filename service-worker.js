@@ -1,10 +1,12 @@
-// service-worker.js — offline app shell. Bump CACHE on any asset change.
-const CACHE = 'coach-claude-v3';
+// service-worker.js — offline app shell. Bump APP_VERSION in js/version.js on any asset change.
+importScripts('./js/version.js');
+const CACHE = 'coach-claude-' + self.APP_VERSION;
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './manifest.webmanifest',
+  './js/version.js',
   './js/app.js',
   './js/program.js',
   './js/store.js',
