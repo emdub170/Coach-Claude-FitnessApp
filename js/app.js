@@ -1,6 +1,6 @@
 // app.js — router + screens for Coach Claude. Framework-free.
 import {
-  loadProgram, getWorkout, getLocation, resolveVariant,
+  loadProgram, loadBundledProgram, getWorkout, getLocation, resolveVariant,
   importProgram, hasRollback, rollbackProgram, resetToBundled, validateProgram
 } from './program.js';
 import {
@@ -8,7 +8,7 @@ import {
   getMeta, setMeta, newSessionId
 } from './store.js';
 import { createSession, addRow, removeRow, setEntryLoadType, todayISO, isEntryLogged } from './logger.js';
-import { toMarkdown, toJSON, sessionMarkdown, entrySummary, filterSince, isoDaysAgo } from './export.js';
+import { toMarkdown, toJSON, toRoutineJSON, sessionMarkdown, entrySummary, filterSince, isoDaysAgo } from './export.js';
 import {
   loadBands, saveBands, resetBands, hasBandOverride,
   bandDisplay, findBandByRank
@@ -535,7 +535,37 @@ async function exportScreen() {
     <div class="btn-row">
       <button class="btn good" data-action="mark-checkin">Mark check-in done (${esc(new Date().toISOString().slice(0,10))})</button>
     </div>
-    <p class="muted small">Marking a check-in sets the "since" date so your next export only shows new work.</p>`;
+    <p class="muted small">Marking a check-in sets the "since" date so your next export only shows new work.</p>
+    <div class="card">
+      <h3>Current routine (program)</h3>
+      <p class="muted small">The program the app is running right now — ${PROG.source === 'imported' ? `Coach Claude's imported v${esc(PROG.program.version || '?')}` : 'the built-in default'} — as JSON labeled with where it came from, so a fresh Claude chat can rebuild it.</p>
+      <div class="btn-row">
+        <button class="btn ghost" data-action="routine-copy">Copy routine JSON</button>
+        <button class="btn ghost" data-action="routine-download">Download .json</button>
+      </div>
+    </div>
+    <details class="card reexport">
+      <summary><strong>Re-export past sessions</strong> (${sessions.length})</summary>
+      <p class="muted small">Everything you've ever logged — including sessions already behind a check-in. Tick what you need, then copy or download it in any format.</p>
+      ${sessions.length ? `
+      <div class="btn-row">
+        <button class="btn ghost" data-action="reexport-all">Select all</button>
+        <button class="btn ghost" data-action="reexport-none">Clear</button>
+      </div>
+      <div class="reexport-list">
+        ${sessions.map(s => `
+        <label><input type="checkbox" class="reexport-pick" value="${esc(s.id)}" />
+          <span>${esc(s.date)} — ${esc(s.workoutName)} &amp; ${esc(s.locationName)}</span></label>`).join('')}
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost" data-recopy="md">Copy Markdown</button>
+        <button class="btn ghost" data-recopy="json">Copy JSON</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost" data-redownload="md">Download .md</button>
+        <button class="btn ghost" data-redownload="json">Download .json</button>
+      </div>` : '<p class="muted small">No sessions logged yet.</p>'}
+    </details>`;
 }
 
 async function importScreen() {
@@ -756,7 +786,7 @@ function onInput(ev) {
 }
 
 async function onClick(ev) {
-  const t = ev.target.closest('[data-action],[data-pick-loc],[data-pick-workout],[data-addrow],[data-delrow],[data-skip],[data-del-session],[data-copy],[data-download],[data-loadtype],[data-band-move],[data-band-del],[data-rest]');
+  const t = ev.target.closest('[data-action],[data-pick-loc],[data-pick-workout],[data-addrow],[data-delrow],[data-skip],[data-del-session],[data-copy],[data-download],[data-recopy],[data-redownload],[data-loadtype],[data-band-move],[data-band-del],[data-rest]');
   if (!t) return;
 
   if (t.dataset.rest !== undefined) {
@@ -798,6 +828,10 @@ async function onClick(ev) {
     return render();
   }
   if (action === 'mark-checkin') { await setMeta('last_checkin', new Date().toISOString().slice(0, 10)); return render(); }
+  if (action === 'routine-copy') return exportRoutine('copy');
+  if (action === 'routine-download') return exportRoutine('download');
+  if (action === 'reexport-all') return setReexportChecks(true);
+  if (action === 'reexport-none') return setReexportChecks(false);
   if (action === 'import-paste') return importPaste();
   if (action === 'rollback') return doRollback();
   if (action === 'reset-program') return doReset();
@@ -811,6 +845,8 @@ async function onClick(ev) {
   }
   if (t.dataset.copy) return copyExport(t.dataset.copy);
   if (t.dataset.download) return downloadExport(t.dataset.download);
+  if (t.dataset.recopy) return reExport(t.dataset.recopy, 'copy');
+  if (t.dataset.redownload) return reExport(t.dataset.redownload, 'download');
 }
 
 async function beginWorkout() {
@@ -880,16 +916,55 @@ async function copyExport(kind) {
   const text = kind === 'json' ? toJSON(scoped)
     : kind === 'prompt' ? CHECKIN_PROMPT + md
     : md;
-  try { await navigator.clipboard.writeText(text); flash('Copied to clipboard'); }
-  catch { flash('Copy failed — long-press the text to select', true); }
+  return copyText(text);
 }
 async function downloadExport(kind) {
   const scoped = await scopedSessions();
   const text = kind === 'md' ? toMarkdown(scoped) : toJSON(scoped);
-  const blob = new Blob([text], { type: kind === 'md' ? 'text/markdown' : 'application/json' });
+  downloadBlob(text, kind === 'md' ? 'text/markdown' : 'application/json',
+    `coach-claude-log-${todayISO()}.${kind}`);
+}
+
+// The full session list filtered to the ids ticked in the re-export picker —
+// getSessions() order is kept, so re-exports read newest-first like the regular
+// export. Null when nothing is ticked.
+async function selectedSessions() {
+  const ids = new Set([...document.querySelectorAll('.reexport-pick:checked')].map(el => el.value));
+  if (!ids.size) return null;
+  return (await getSessions()).filter(s => ids.has(s.id));
+}
+async function reExport(kind, how) {
+  const chosen = await selectedSessions();
+  if (!chosen) return flash('Tick at least one session first', true);
+  const text = kind === 'json' ? toJSON(chosen) : toMarkdown(chosen);
+  if (how === 'copy') return copyText(text);
+  downloadBlob(text, kind === 'md' ? 'text/markdown' : 'application/json',
+    `coach-claude-log-${todayISO()}.${kind}`);
+}
+function setReexportChecks(on) {
+  document.querySelectorAll('.reexport-pick').forEach(el => { el.checked = on; });
+}
+
+async function exportRoutine(how) {
+  let bundled = null;
+  if (PROG.source === 'imported') {
+    try { bundled = await loadBundledProgram(); }
+    catch { /* offline without cache — export the active program alone */ }
+  }
+  const text = toRoutineJSON(PROG.program, PROG.source, bundled);
+  if (how === 'copy') return copyText(text);
+  downloadBlob(text, 'application/json', `coach-claude-routine-${todayISO()}.json`);
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); flash('Copied to clipboard'); }
+  catch { flash('Copy failed — long-press the text to select', true); }
+}
+function downloadBlob(text, mime, filename) {
+  const blob = new Blob([text], { type: mime });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `coach-claude-log-${new Date().toISOString().slice(0, 10)}.${kind}`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
 }

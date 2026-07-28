@@ -224,6 +224,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .notice.good { border-color: var(--good); color: #d1fae5; }
 .notice.warn { border-color: var(--warn); color: #fef3c7; }
 
+/* Export screen — re-export picker */
+.reexport summary { cursor: pointer; font-size: 15px; }
+.reexport-list { margin-top: 10px; max-height: 300px; overflow-y: auto; }
+.reexport-list label { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
+.reexport-list input[type=checkbox] { width: 22px; height: 22px; min-height: 0; flex: none; }
+
 pre.export {
   background: #0a1322; border: 1px solid var(--line); border-radius: var(--radius);
   padding: 12px; overflow-x: auto; font-size: 12.5px; white-space: pre-wrap; word-break: break-word;

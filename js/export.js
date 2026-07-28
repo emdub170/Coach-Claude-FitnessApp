@@ -129,6 +129,23 @@ export function toJSON(sessions) {
   return JSON.stringify({ sessions: clean }, null, 2);
 }
 
+// Routine export — the program the app is running right now, labeled with its
+// provenance so a fresh Claude chat can rebuild the plan without any other
+// context. When an imported program is active, the bundled default rides along
+// for reference; when the default itself is active, activeProgram IS it.
+export function toRoutineJSON(activeProgram, source, bundledProgram) {
+  const out = {
+    exported: new Date().toISOString().slice(0, 10),
+    activeSource: source, // 'imported' (from a Coach Claude check-in) | 'bundled' (built-in default)
+    note: source === 'imported'
+      ? 'activeProgram is the imported Coach Claude program the app is running now; bundledProgram is the built-in default it replaced.'
+      : 'activeProgram is the built-in default program (no imported program is active).',
+    activeProgram
+  };
+  if (source === 'imported' && bundledProgram) out.bundledProgram = bundledProgram;
+  return JSON.stringify(out, null, 2);
+}
+
 // ---- date helpers ------------------------------------------------------
 
 export function filterSince(sessions, sinceISO) {

@@ -81,6 +81,20 @@ your equipment, so those edits are saved on-device and survive program imports.
 The program is just JSON, so Claude can freely tweak sets, reps, loads, swap exercises per location,
 add rules, or introduce a new workout type — and the app picks it up immediately.
 
+### Exporting the routine itself
+
+The Export screen also has a **Current routine (program)** card: copy or download the program the
+app is running *right now* as JSON, labeled with whether it's an imported Coach Claude version or
+the built-in default (an imported export includes the built-in default alongside for reference).
+Hand it to a fresh Claude chat so it can see — or rebuild — exactly what you're doing.
+
+### Re-exporting past sessions
+
+Marked a check-in but need an old session again in a different format (say you copied the Markdown
+but now want the `.json` download)? **Re-export past sessions** on the Export screen lists every
+session ever logged — `date — workout & location` — with a checkbox each. Tick what you need and
+copy/download it as Markdown or JSON, without touching your check-in date.
+
 ---
 
 ## Install on Android

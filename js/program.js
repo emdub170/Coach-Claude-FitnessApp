@@ -15,6 +15,12 @@ async function fetchBundled() {
   return res.json();
 }
 
+// The built-in default program, regardless of any imported override. Served
+// from the service-worker cache when offline.
+export function loadBundledProgram() {
+  return fetchBundled();
+}
+
 // Returns { program, source: 'imported' | 'bundled' }
 export async function loadProgram(force = false) {
   if (cache && !force) return cache;
