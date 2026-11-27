@@ -1,6 +1,6 @@
 // app.js — router + screens for Coach Claude. Framework-free.
 import {
-  loadProgram, loadBundledProgram, getWorkout, getLocation, resolveVariant,
+  loadProgram, getWorkout, getLocation, resolveVariant,
   importProgram, hasRollback, rollbackProgram, resetToBundled, validateProgram
 } from './program.js';
 import {
@@ -8,7 +8,7 @@ import {
   getMeta, setMeta, newSessionId
 } from './store.js';
 import { createSession, addRow, removeRow, setEntryLoadType, todayISO, isEntryLogged } from './logger.js';
-import { toMarkdown, toJSON, toRoutineJSON, sessionMarkdown, entrySummary, filterSince, isoDaysAgo } from './export.js';
+import { toMarkdown, toJSON, toRoutineJSON, toClaudeBundle, sessionMarkdown, entrySummary, filterSince, isoDaysAgo } from './export.js';
 import {
   loadBands, saveBands, resetBands, hasBandOverride,
   bandDisplay, findBandByRank
@@ -45,7 +45,7 @@ async function boot() {
       localStorage.removeItem('cc_active_backup');
     }
   } catch { /* corrupt backup — fall back to the IndexedDB copy */ }
-  window.addEventListener('hashchange', render);
+  window.addEventListener('hashchange', onHash);
   window.addEventListener('pagehide', flushActive);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushActive();
@@ -53,7 +53,7 @@ async function boot() {
   appEl.addEventListener('click', onClick);
   appEl.addEventListener('input', onInput);
   appEl.addEventListener('change', onInput);
-  render();
+  await onHash();
   registerSW();
 }
 
@@ -85,6 +85,58 @@ function updateBanner() {
     location.reload();
   });
   document.body.appendChild(bar);
+}
+
+// ---- program link (#program=<payload>) ----------------------------------
+// Coach Claude hands over a program as one tappable link instead of a file.
+// Payload = base64url of the program JSON, gzip-compressed (plain UTF-8 JSON
+// is accepted too). Nothing is imported until the confirm button is tapped.
+
+let pendingLink = null; // { program } | { error }
+
+async function decodeProgramPayload(payload) {
+  const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  let text;
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    if (typeof DecompressionStream === 'undefined')
+      throw new Error('This browser cannot open compressed program links.');
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    text = await new Response(stream).text();
+  } else {
+    text = new TextDecoder().decode(bytes);
+  }
+  const obj = JSON.parse(text);
+  validateProgram(obj);
+  return obj;
+}
+
+async function onHash() {
+  const m = location.hash.match(/^#program=(.+)$/);
+  if (!m) return render();
+  try { pendingLink = { program: await decodeProgramPayload(decodeURIComponent(m[1])) }; }
+  catch (err) { pendingLink = { error: err.message || 'unreadable link' }; }
+  // Swap the payload out of the address bar so a reload or Back can't replay it.
+  history.replaceState(null, '', '#/import');
+  render();
+}
+
+function pendingLinkCard() {
+  if (!pendingLink) return '';
+  if (pendingLink.error)
+    return `<div class="notice warn">That program link couldn't be read: ${esc(pendingLink.error)}</div>`;
+  const p = pendingLink.program;
+  return `
+    <div class="card">
+      <h3>Program link: v${esc(p.version || '?')}</h3>
+      <p class="muted small">Replaces ${PROG.source === 'imported' ? 'v' + esc(PROG.program.version || '?') : 'the built-in default'}. Your current program is kept for one-tap rollback, and logged sessions are untouched.</p>
+      <ul>${p.workouts.map(w => `<li>${esc(w.name)}</li>`).join('')}</ul>
+      <div class="btn-row">
+        <button class="btn primary" data-action="link-import">Import this program</button>
+        <button class="btn ghost" data-action="link-cancel">Cancel</button>
+      </div>
+    </div>`;
 }
 
 // ---- router ------------------------------------------------------------
@@ -519,10 +571,13 @@ async function exportScreen() {
   return `
     <h1>Export for check-in</h1>
     <div class="notice">${note}</div>
-    <p class="muted small">Copy this into your Coach Claude chat and ask for a weekly adjustment. Claude returns an updated <code>program.json</code> you load under Import.</p>
+    <p class="muted small">One tap copies this log plus the program you're running. Paste it into your Coach Claude chat; Claude replies with a program link you tap to import.</p>
     <pre class="export" id="export-md">${esc(md)}</pre>
     <div class="btn-row">
-      <button class="btn primary" data-copy="prompt">Copy with Claude prompt</button>
+      <button class="btn primary" data-copy="claude">Copy for Claude (log + program)</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" data-copy="prompt">Copy log with check-in prompt</button>
     </div>
     <div class="btn-row">
       <button class="btn ghost" data-copy="md">Copy Markdown</button>
@@ -538,7 +593,7 @@ async function exportScreen() {
     <p class="muted small">Marking a check-in sets the "since" date so your next export only shows new work.</p>
     <div class="card">
       <h3>Current routine (program)</h3>
-      <p class="muted small">The program the app is running right now — ${PROG.source === 'imported' ? `Coach Claude's imported v${esc(PROG.program.version || '?')}` : 'the built-in default'} — as JSON labeled with where it came from, so a fresh Claude chat can rebuild it.</p>
+      <p class="muted small">Only the program the app is running right now — ${PROG.source === 'imported' ? `Coach Claude's imported v${esc(PROG.program.version || '?')}` : 'the built-in default'} — as JSON, without the log.</p>
       <div class="btn-row">
         <button class="btn ghost" data-action="routine-copy">Copy routine JSON</button>
         <button class="btn ghost" data-action="routine-download">Download .json</button>
@@ -572,7 +627,8 @@ async function importScreen() {
   const canRoll = await hasRollback();
   return `
     <h1>Import program</h1>
-    <p class="muted small">Paste the <code>program.json</code> Coach Claude gives you, or load a file. Your current program is kept for one-tap rollback.</p>
+    ${pendingLinkCard()}
+    <p class="muted small">Tap a program link from Coach Claude, paste the <code>program.json</code>, or load a file. Your current program is kept for one-tap rollback.</p>
     <div class="card">
       <label class="field">Paste program JSON</label>
       <textarea id="import-text" placeholder='{ "version": "...", "locations": [...], "workouts": [...] }'></textarea>
@@ -833,6 +889,8 @@ async function onClick(ev) {
   if (action === 'reexport-all') return setReexportChecks(true);
   if (action === 'reexport-none') return setReexportChecks(false);
   if (action === 'import-paste') return importPaste();
+  if (action === 'link-import') return importLink();
+  if (action === 'link-cancel') { pendingLink = null; return render(); }
   if (action === 'rollback') return doRollback();
   if (action === 'reset-program') return doReset();
   if (action === 'band-add') return addBandDraft();
@@ -906,12 +964,13 @@ const CHECKIN_PROMPT = `Coach Claude — weekly check-in. Below is my training l
 Please:
 1. Give a short assessment of the week (adherence, progression, anything trending the wrong way).
 2. Flag anything concerning (pain notes, stalled lifts, missed sessions).
-3. Reply with an updated program.json I can import into the app (keep the same schema: locations, workouts, variants, bands).
+3. Reply with the updated program as a tappable import link (same schema: locations, workouts, variants, bands; keep workout ids stable).
 
 `;
 
 async function copyExport(kind) {
   const scoped = await scopedSessions();
+  if (kind === 'claude') return copyText(toClaudeBundle(toMarkdown(scoped), PROG.program, PROG.source));
   const md = kind === 'json' ? null : toMarkdown(scoped);
   const text = kind === 'json' ? toJSON(scoped)
     : kind === 'prompt' ? CHECKIN_PROMPT + md
@@ -946,12 +1005,9 @@ function setReexportChecks(on) {
 }
 
 async function exportRoutine(how) {
-  let bundled = null;
-  if (PROG.source === 'imported') {
-    try { bundled = await loadBundledProgram(); }
-    catch { /* offline without cache — export the active program alone */ }
-  }
-  const text = toRoutineJSON(PROG.program, PROG.source, bundled);
+  // Active program only: bundling the built-in default alongside doubled the
+  // paste and got it cut off mid-file in chat.
+  const text = toRoutineJSON(PROG.program, PROG.source, null);
   if (how === 'copy') return copyText(text);
   downloadBlob(text, 'application/json', `coach-claude-routine-${todayISO()}.json`);
 }
@@ -1003,6 +1059,17 @@ async function tryImport(text) {
   } catch (err) {
     show(`<div class="notice warn">Couldn't import: ${esc(err.message)}</div>`);
   }
+}
+async function importLink() {
+  if (!pendingLink || !pendingLink.program) return;
+  try {
+    await importProgram(pendingLink.program);
+    pendingLink = null;
+    PROG = await loadProgram(true);
+    BANDS = await loadBands(PROG.program);
+    flash(`Imported v${PROG.program.version || '?'}`);
+    location.hash = '#/program';
+  } catch (err) { flash(`Couldn't import: ${err.message}`, true); }
 }
 async function doRollback() {
   try {

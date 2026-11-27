@@ -146,6 +146,20 @@ export function toRoutineJSON(activeProgram, source, bundledProgram) {
   return JSON.stringify(out, null, 2);
 }
 
+// One paste for a coach chat: the log as Markdown, then the active program as
+// compact JSON (no indentation, no built-in default) so it survives chat limits.
+export function toClaudeBundle(markdown, activeProgram, source) {
+  return `Coach Claude: log + current program. Reply with the updated program as a tappable import link.
+
+${markdown.trim()}
+
+## Current program (${source === 'imported' ? 'imported' : 'built-in default'}, v${activeProgram.version || '?'})
+\`\`\`json
+${JSON.stringify(activeProgram)}
+\`\`\`
+`;
+}
+
 // ---- date helpers ------------------------------------------------------
 
 export function filterSince(sessions, sinceISO) {
