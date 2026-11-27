@@ -72,14 +72,22 @@ your equipment, so those edits are saved on-device and survive program imports.
 ## Weekly check-in flow
 
 1. Open **Export**. It shows every session since your last check-in (or the last 7 days).
-2. **Copy Markdown** (or JSON) and paste it into your Coach Claude chat. Ask for a weekly adjustment.
+2. **Copy for Claude** copies the log plus the running program in one paste. Drop it into your
+   Coach Claude chat.
 3. Claude returns an updated `program.json`.
-4. Open **Import**, paste it in (or load the file). Your previous program is kept for one-tap
-   **rollback**.
+4. Tap the **program link** Claude sends (or open **Import** and paste / load the JSON). Your
+   previous program is kept for one-tap **rollback**.
 5. Tap **Mark check-in done** so your next export only shows new work.
 
 The program is just JSON, so Claude can freely tweak sets, reps, loads, swap exercises per location,
 add rules, or introduce a new workout type — and the app picks it up immediately.
+
+### Program links
+
+A program can arrive as one link: `…/Coach-Claude-FitnessApp/#program=<payload>`, where the payload
+is the program JSON, gzip-compressed, then base64url-encoded with the padding stripped (plain
+UTF-8 JSON, base64url-encoded, also works). The app shows the version and workout names and imports
+only when you tap **Import this program**.
 
 ### Exporting the routine itself
 
